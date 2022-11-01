@@ -25,7 +25,11 @@ import io from "socket.io-client"
       }
     },
     created() {
-      this.socket = io("https://game-test-birds-eye.herokuapp.com/")
+      this.socket = io("https://game-test-birds-eye.herokuapp.com", {
+        withCredentials: true,
+        extraHeaders: {
+        }
+      })
       console.log(this.socket)
     },
     mounted() {
