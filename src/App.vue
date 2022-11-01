@@ -1,15 +1,15 @@
 <template>
   <div id="app">
-    <HelloWorld/>
+    <GameBoard/>
   </div>
 </template>
 
 <script>
-  import HelloWorld from './components/HelloWorld.vue';
+  import GameBoard from './components/GameBoard.vue';
   export default {
     name: 'App',
     components : {
-      HelloWorld
+      GameBoard
     },
     data : function () {
       return {
