@@ -11,17 +11,6 @@
     components : {
       GameBoard
     },
-    data : function () {
-      return {
-
-      }
-    },
-    methods: {
-
-    },
-    created: function() {
-
-    }
   }
 </script>
 
