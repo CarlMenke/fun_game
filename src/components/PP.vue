@@ -1,23 +1,24 @@
 <template>
     <div>
-        <PPCard :v-for="card in cards" :card="cards"/>
+        <PPCard v-for="(card,index) in player.productionCards" :card="card" :key="index"/>
     </div>
 </template>
 
 <script>
+    import { mapState } from 'vuex';
     import PPCard from './PPCard.vue';
     export default {
         name: "PP",
         components:{
             PPCard
         },
-        props: {
-            cards:Array
-        },
         data () {
             return {
                 
             }
+        },
+        computed: {
+            ...mapState(["player"])
         }
     }
 </script>

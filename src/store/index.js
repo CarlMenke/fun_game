@@ -1,11 +1,40 @@
 import Vuex from "vuex"
-import Vue from 'vue'
-import ui from './modules/ui'
 
-Vue.use(Vuex)
-
-export default new Vuex.Store({
-    modules:{
-        ui
+export default Vuex.createStore({
+  state () {
+    return {
+      game: null,
+      name: '',
+      player: {},
+      socket: {}
     }
+  },
+  actions: {
+
+  },
+  mutations: {
+    updateGame(state, payload){
+      state.game = payload
+    },
+    updateName(state, payload){
+      state.name = payload
+    },
+    updatePlayer(state, payload){
+      state.player = payload
+    },
+    updateSocket(state, payload){
+      state.socket = payload
+    }
+  },
+  getters: {
+    getGame: (state) => () => {
+      return state.game
+    },
+    getPlayer: (state) => () => {
+      return state.player
+    },
+    getSocket: (state) => () => {
+      return state.socket
+    }
+  }
 })

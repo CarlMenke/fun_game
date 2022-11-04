@@ -10,6 +10,8 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@vue/compat": "^3.2.41",
+    "@vue/compiler-sfc": "^3.2.41",
     "babylonjs": "^5.30.0",
     "babylonjs-loaders": "^5.30.0",
     "core-js": "^3.8.3",
@@ -17,9 +19,10 @@
     "serve-static": "^1.15.0",
     "socket.io": "^4.5.3",
     "socket.io-client": "^4.5.3",
-    "vue": "^2.6.14",
+    "vue": "^3.2.41",
     "vue-native-websocket": "^2.0.15",
-    "vuex": "^3.1.0"
+    "vue-router": "^4.1.6",
+    "vuex": "^4.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
@@ -30,8 +33,7 @@
     "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
     "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3",
-    "vue-template-compiler": "^2.6.14"
+    "eslint-plugin-vue": "^8.0.3"
   },
   "eslintConfig": {
     "root": true,

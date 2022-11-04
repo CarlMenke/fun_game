@@ -1,6 +1,6 @@
 <template>
   <div>
-      <UI v-if="player" :player="player"></UI>
+      <UI v-if="gameRunning"></UI>
     <form v-if="!gameId" @submit="handleCreateGame">
       <input ref="createGameInput"/>
       <button type="submit"> Create Game </button>
@@ -14,33 +14,28 @@
       <input ref="joinGameInput"/>
       <button type="submit"> Join Game </button>
     </form>
-    <div v-if="this.gameId" >Currenetly in the game: {{this.gameId}}</div>
+    <div v-if="gameId" >Currenetly in the game: {{gameId}}</div>
     <canvas id="canvas">
     </canvas>
-    <section v-if="gameId">
+    <section v-if="gameRunning">
       <div class="flexrow">
-        <div class="flex-item"> wheat price: {{game.wheatValue}}</div> 
-        <div class="flex-item"> wood price: {{this.game.woodValue}}</div> 
-        <div class="flex-item"> iron price: {{this.game.ironValue}}</div> 
-        <div class="flex-item"> coal price: {{this.game.coalValue}}</div> 
-        <div class="flex-item"> goods price: {{this.game.goodValue}}</div> 
-        <div class="flex-item"> luxury price: {{this.game.luxuryValue}}</div> 
+        <div class="flex-item" v-for="commodity in game.commodies" :key="commodity.name"> {{commodity.name}} price: {{commodity.value}}</div> 
       </div>
       <div class="flexrow">
-        <div class="flex-item"> railroad available One: {{this.game.avaiableRailRoadOne.name}}</div> 
-        <div class="flex-item"> railroad available Two: {{this.game.avaiableRailRoadTwo.name}} </div> 
+        <div class="flex-item"> railroad available One: {{game.avaiableRailRoadOne.name}}</div> 
+        <div class="flex-item"> railroad available Two: {{game.avaiableRailRoadTwo.name}} </div> 
       </div>
       <div class="flexrow">
-        <div class="flex-item"> town avaiable: {{this.game.avaiableTown.specificType}}{{this.game.avaiableTown.specificPrice}} </div>
+        <div class="flex-item"> town avaiable: {{game.avaiableTown.specificType}}{{game.avaiableTown.specificPrice}} </div>
       </div>
       <div class="flexrow">
-        <div class="flex-item"> building one: {{this.game.avaiableBuildingOne.name}}</div> 
-        <div class="flex-item"> building Two: {{this.game.avaiableBuildingTwo.name}}</div> 
-        <div class="flex-item"> building Three: {{this.game.avaiableBuildingThree.name}}</div> 
-        <div class="flex-item"> building four: {{this.game.avaiableBuildingFour.name}}</div> 
+        <div class="flex-item"> building one: {{game.avaiableBuildingOne.name}}</div> 
+        <div class="flex-item"> building Two: {{game.avaiableBuildingTwo.name}}</div> 
+        <div class="flex-item"> building Three: {{game.avaiableBuildingThree.name}}</div> 
+        <div class="flex-item"> building four: {{game.avaiableBuildingFour.name}}</div> 
       </div>
     </section>
-    <button v-if="!gameRunning" @click="handleStartGame()">START GAME</button>
+    <button v-if="!gameRunning && game ? game.players.length > 1 : false" @click="handleStartGame()">START GAME</button>
   </div>
 </template>
 
@@ -57,6 +52,7 @@
   import { Scene } from "@babylonjs/core/scene";
   import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial"
   import UI from "./UI.vue"
+  import { mapState, mapMutations, mapGetters } from "vuex";
   export default {
     name: 'GameBoard',
     components:{
@@ -65,11 +61,8 @@
     data () {
       return {
         gameRunning: false,
-        name:null,
-        player: null,
         socket: {},
         board : board,
-        game : {},
         scene : null,
         roomId: null,
         canvas: null,
@@ -79,9 +72,13 @@
         makingName: false
       }
     },
+    computed: {
+      ...mapState(["game", "name", "socket", "player"]),
+      ...mapGetters(["getGame", "getPlayer", "getSocket"])
+    },
     created() {
       //this.socket = io("https://game-test-birds-eye.herokuapp.com", { })
-      this.socket = io("http://localhost:3000", { })
+      this.updateSocket(io("http://localhost:3000", { }))
 
     },
     async mounted() {
@@ -92,37 +89,45 @@
         this.scene.render();
       });
 
-      this.socket.on('gameStarted', data => {
-          this.game = {...data.game}
+      this.getSocket().on('gameStarted', data => {
+          this.updateGame(data.game)
+          this.updatePlayer(data.game.players.filter((player)=> player.name === this.getPlayer().name)[0])
+          console.log(this.getGame())
+          console.log(this.getPlayer())
           let position = new BABYLON.Vector3(-24.2,1,-15)
           this.gameRunning = true
           this.moveModel(position, 1)
       })
 
-      this.socket.on("invalidRoom", ()=>{
+      this.getSocket().on("invalidRoom", ()=>{
         console.log("invalid room")
       })
 
-      this.socket.on("playerJoined", () => {
+      this.getSocket().on("playerJoined", () => {
         const data = {
-          game: this.game,
+          game: this.getGame(),
           roomId: this.roomId
         }
-        this.socket.emit("welcomePlayer", data)
+        this.getSocket().emit("welcomePlayer", data)
       })
 
-      this.socket.on("joinedRoom", data => {
-        this.game = {...data.game}
+      this.getSocket().on("joinedRoom", data => {
+        this.updateGame(data.game)
         this.gameId = data.roomId
         this.makingName = true;
       })
 
-      this.socket.on("updateGame", data => {
-        console.log(data.game)
-        this.game = {...data.game}
+      this.getSocket().on("updateGame", data => {
+        this.updateGame(data.game)
+        this.updatePlayer(data.game.players.filter(player => player.name === this.getPlayer().name)[0])
+      })
+
+      this.getSocket().on("updatePlayer", data => {
+        this.updatePlayer(data.player)
       })
     },
     methods : {
+      ...mapMutations(["updateGame", "updateName", "updatePlayer", "updateSocket"]),
       async createScene() {
         var scene = new Scene(this.engine);
         scene.clearColor = new BABYLON.Color3(1,1,1)
@@ -154,16 +159,6 @@
           )
         )
         return scene
-      },
-      moveStart(direction) {
-        this.socket.emit("moveStart", direction);
-      },
-      handleStartGame(){
-        const data = {
-          game: this.game,
-          roomId : this.roomId
-        }
-        this.socket.emit("startGame", data )
       },
       moveModel(position){
         const frameRate = 10
@@ -230,13 +225,23 @@
         this.scene.beginDirectAnimation(this.card,[positionX, positionY, positionZ, rotationZ], 0, frameRate * 1, false)
         console.log(this.card.position)
       },
+      moveStart(direction) {
+        this.getSocket().emit("moveStart", direction);
+      },
+      handleStartGame(){
+        const data = {
+          game: this.getGame(),
+          roomId : this.roomId
+        }
+        this.getSocket().emit("startGame", data )
+      },
       handleCreateGame(e){
         e.preventDefault()
         this.roomId = this.$refs.createGameInput.value
         const data = {
           roomId : this.$refs.createGameInput.value
         }
-        this.socket.emit("createRoom", data)
+        this.getSocket().emit("createRoom", data)
         this.$refs.createGameInput.value = ""
         this.makingName = false;
       },
@@ -246,19 +251,19 @@
         const data = {
           roomId : this.$refs.joinGameInput.value
         }
-        this.socket.emit("joinRoom", data)
+        this.getSocket().emit("joinRoom", data)
         this.$refs.joinGameInput.value = ""
         this.makingName = false;
       },
-      handleAddNameToGame(e) {
+      async handleAddNameToGame(e) {
         e.preventDefault()
-        this.name = this.$refs.addNameToGame.value
+        this.updateName(this.$refs.addNameToGame.value) 
         const data = {
           name : this.$refs.addNameToGame.value,
           roomId: this.roomId,
-          game: this.game
+          game: this.getGame()
         }
-        this.socket.emit("addNameToGame", data)
+        this.getSocket().emit("addNameToGame", data)
         this.$refs.addNameToGame.value = ""
         this.makingName = false;
       }

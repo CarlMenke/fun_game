@@ -1,10 +1,10 @@
 <template>
     <div class="ppcard">
         <div class="production-container">
-            <img :v-for="commodity in card.production" :src="commodity.imageLink"/>
+            <img v-for="commodity in card.production" :src="commodity.imageLink" :key="commodity.imageLink"/>
         </div>
         <div class="price-container">
-            <img :v-for="commodity in card.price" :src="commodity.imageLink"/>
+            <img v-for="commodity in card.price" :src="commodity.imageLink" :key="commodity.imageLink" />
         </div>
     </div>
 </template>
