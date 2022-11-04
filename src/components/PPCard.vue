@@ -1,10 +1,10 @@
 <template>
     <div class="ppcard">
         <div class="production-container">
-            <img v-for="commodity in card.production" :src="commodity.imageLink" :key="commodity.imageLink"/>
+            <img class="commodity-small" v-for="(commodity, index) in card.production" :src="commodity.imageLink" :key="index"/>
         </div>
         <div class="price-container">
-            <img v-for="commodity in card.price" :src="commodity.imageLink" :key="commodity.imageLink" />
+            <img class="commodity-small" v-for="(commodity, index) in card.price" :src="commodity.imageLink" :key="index" />
         </div>
     </div>
 </template>
@@ -14,7 +14,7 @@ export default {
     name: "PPCard",
     props:{
         card:Object
-    }
+    },
 }
 </script>
 
@@ -22,7 +22,8 @@ export default {
     .ppcard{
         width:12vw;
         height:25vh;
-        position:relative
+        border:1px solid black; 
+        margin:5px;
     }
     .production-container{
         display:flex;
@@ -37,5 +38,9 @@ export default {
         justify-content: space-around;
         align-items: space-around;
         height:50%
+    }
+    .commodity-small{
+        width:20px;
+        height:20px;
     }
 </style>

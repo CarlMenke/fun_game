@@ -73,7 +73,7 @@
       }
     },
     computed: {
-      ...mapState(["game", "name", "socket", "player"]),
+      ...mapState(["game", "name", "socket", "player", "gameCanStart"]),
       ...mapGetters(["getGame", "getPlayer", "getSocket"])
     },
     created() {
@@ -127,7 +127,7 @@
       })
     },
     methods : {
-      ...mapMutations(["updateGame", "updateName", "updatePlayer", "updateSocket"]),
+      ...mapMutations(["updateGame", "updateName", "updatePlayer", "updateSocket", "updateGameCanStart"]),
       async createScene() {
         var scene = new Scene(this.engine);
         scene.clearColor = new BABYLON.Color3(1,1,1)
@@ -237,13 +237,15 @@
       },
       handleCreateGame(e){
         e.preventDefault()
+        if(this.$refs.createGameInput.value !== ""){
         this.roomId = this.$refs.createGameInput.value
         const data = {
           roomId : this.$refs.createGameInput.value
         }
         this.getSocket().emit("createRoom", data)
         this.$refs.createGameInput.value = ""
-        this.makingName = false;
+        this.makingName = false; 
+        }
       },
       handleJoinGame(e){
         e.preventDefault()

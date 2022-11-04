@@ -6,7 +6,8 @@ export default Vuex.createStore({
       game: null,
       name: '',
       player: {},
-      socket: {}
+      socket: {},
+      gameCanStart: false
     }
   },
   actions: {
@@ -24,6 +25,9 @@ export default Vuex.createStore({
     },
     updateSocket(state, payload){
       state.socket = payload
+    },
+    updateGameCanStart(state, payload){
+      state.gameCanStart = payload
     }
   },
   getters: {
