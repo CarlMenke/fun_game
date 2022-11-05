@@ -1,20 +1,26 @@
 <template>
-    <div class="ppcard">
-        <div class="production-container">
-            <img class="commodity-small" v-for="(commodity, index) in card.production" :src="commodity.imageLink" :key="index"/>
-        </div>
-        <div class="price-container">
-            <img class="commodity-small" v-for="(commodity, index) in card.price" :src="commodity.imageLink" :key="index" />
+    <div>
+        <div v-for="(card,cardIndex) in player?.productionCards" :key="cardIndex" class="ppcard">
+            <div class="producIion-container">
+                <img class="commodity-small" v-for="(commodity, commodityIndex) in card?.production" :src="commodity?.imageLink" :key="commodityIndex"/>
+            </div>
+            <div class="price-container">
+                <img class="commodity-small" v-for="(commodity, commodityIndex) in card?.price" :src="commodity?.imageLink" :key="commodityIndex" />
+            </div>
         </div>
     </div>
 </template>
 
 <script>
+import { mapState } from "vuex"
 export default {
     name: "PPCard",
-    props:{
-        card:Object
+    computed:{
+        ...mapState(["player"])
     },
+    mounted () {
+        console.log(this.player)
+    }
 }
 </script>
 

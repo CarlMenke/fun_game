@@ -1,5 +1,6 @@
 <template>
   <div>
+    <UserMessage v-if="message"/>
       <UI v-if="gameRunning"></UI>
     <form v-if="!gameId" @submit="handleCreateGame">
       <input ref="createGameInput"/>
@@ -22,26 +23,23 @@
         <div class="flex-item" v-for="commodity in game.commodies" :key="commodity.name"> {{commodity.name}} price: {{commodity.value}}</div> 
       </div>
       <div class="flexrow">
-        <div class="flex-item"> railroad available One: {{game.avaiableRailRoadOne.name}}</div> 
-        <div class="flex-item"> railroad available Two: {{game.avaiableRailRoadTwo.name}} </div> 
+        <div class="flex-item" v-for="(railroad, railRoadIndex) in game.shownRailRoads" :key="railRoadIndex" @click="handleStartAuction(railRoadIndex)" > railroad {{railRoadIndex}}: {{railroad.name}}</div> 
       </div>
       <div class="flexrow">
         <div class="flex-item"> town avaiable: {{game.avaiableTown.specificType}}{{game.avaiableTown.specificPrice}} </div>
       </div>
       <div class="flexrow">
-        <div class="flex-item"> building one: {{game.avaiableBuildingOne.name}}</div> 
-        <div class="flex-item"> building Two: {{game.avaiableBuildingTwo.name}}</div> 
-        <div class="flex-item"> building Three: {{game.avaiableBuildingThree.name}}</div> 
-        <div class="flex-item"> building four: {{game.avaiableBuildingFour.name}}</div> 
+        <div class="flex-item" v-for="(building, buildingIndex) in game.shownBuildings" :key="buildingIndex"> building {{buidlingIndex}}: {{building.name}}</div> 
       </div>
     </section>
-    <button v-if="!gameRunning && game ? game.players.length > 1 : false" @click="handleStartGame()">START GAME</button>
+    <button v-if="!gameRunning && game ? game.players.length > 1 : false && game.players[game.turnIndex].name === player.name" @click="handleStartGame()">START GAME</button>
   </div>
 </template>
 
 <script>
   import io from "socket.io-client"
-  import board from "../assets/board.jpg"
+  import board from "../../public/assets/board.jpg"
+  import UserMessage from "./UserMessage.vue";
   import * as BABYLON from 'babylonjs';
   import "babylonjs-loaders"
   import { ArcRotateCamera } from "@babylonjs/core"
@@ -56,12 +54,11 @@
   export default {
     name: 'GameBoard',
     components:{
-      UI
+      UI,
+      UserMessage
     },
     data () {
       return {
-        gameRunning: false,
-        socket: {},
         board : board,
         scene : null,
         roomId: null,
@@ -73,13 +70,12 @@
       }
     },
     computed: {
-      ...mapState(["game", "name", "socket", "player", "gameCanStart"]),
-      ...mapGetters(["getGame", "getPlayer", "getSocket"])
+      ...mapState(["gameRunning", "game", "name", "socket", "player", "gameCanStart", "message"]),
+      ...mapGetters(["getGame", "getPlayer", "getSocket", "getGameRunning"])
     },
     created() {
       //this.socket = io("https://game-test-birds-eye.herokuapp.com", { })
       this.updateSocket(io("http://localhost:3000", { }))
-
     },
     async mounted() {
       this.canvas = document.getElementById("canvas");
@@ -89,45 +85,60 @@
         this.scene.render();
       });
 
-      this.getSocket().on('gameStarted', data => {
+      await this.getSocket().on('gameStarted', async data => {
           this.updateGame(data.game)
+          console.log(data.game.players.filter((player)=> player.name === this.getPlayer().name)[0])
           this.updatePlayer(data.game.players.filter((player)=> player.name === this.getPlayer().name)[0])
           console.log(this.getGame())
           console.log(this.getPlayer())
           let position = new BABYLON.Vector3(-24.2,1,-15)
-          this.gameRunning = true
+          this.updateGameRunning(true)
           this.moveModel(position, 1)
       })
 
-      this.getSocket().on("invalidRoom", ()=>{
+      await this.getSocket().on("invalidRoom", ()=>{
         console.log("invalid room")
       })
 
-      this.getSocket().on("playerJoined", () => {
+      await this.getSocket().on("playerJoined", async () => {
         const data = {
           game: this.getGame(),
           roomId: this.roomId
         }
-        this.getSocket().emit("welcomePlayer", data)
+        await this.getSocket().emit("welcomePlayer", data)
       })
 
-      this.getSocket().on("joinedRoom", data => {
+      await this.getSocket().on("joinedRoom", data => {
         this.updateGame(data.game)
         this.gameId = data.roomId
         this.makingName = true;
       })
 
-      this.getSocket().on("updateGame", data => {
+      await this.getSocket().on("updateGame", data => {
         this.updateGame(data.game)
         this.updatePlayer(data.game.players.filter(player => player.name === this.getPlayer().name)[0])
       })
 
-      this.getSocket().on("updatePlayer", data => {
+      await this.getSocket().on("updatePlayer", data => {
         this.updatePlayer(data.player)
+      })
+
+      await this.getSocket().on("gameStartedQuery", (data) => {
+        const bool = this.getGame().turnIndex
+        data.bool = bool
+        this.getSocket().emit("gameStartedQueryResponse", data)
+      })
+
+      await this.getSocket().on("emitMessage", message => {
+        this.updateMessage(message)
       })
     },
     methods : {
-      ...mapMutations(["updateGame", "updateName", "updatePlayer", "updateSocket", "updateGameCanStart"]),
+
+      //state methods
+      ...mapMutations(["updateGameRunning", "updateGame", "updateName", "updatePlayer", "updateSocket", "updateGameCanStart", "updateMessage"]),
+
+      //babylon animation methods
       async createScene() {
         var scene = new Scene(this.engine);
         scene.clearColor = new BABYLON.Color3(1,1,1)
@@ -228,32 +239,34 @@
       moveStart(direction) {
         this.getSocket().emit("moveStart", direction);
       },
-      handleStartGame(){
+
+      //pre game methods
+      async handleStartGame(){
         const data = {
           game: this.getGame(),
           roomId : this.roomId
         }
-        this.getSocket().emit("startGame", data )
+        await this.getSocket().emit("startGame", data )
       },
-      handleCreateGame(e){
+      async handleCreateGame(e){
         e.preventDefault()
         if(this.$refs.createGameInput.value !== ""){
         this.roomId = this.$refs.createGameInput.value
         const data = {
           roomId : this.$refs.createGameInput.value
         }
-        this.getSocket().emit("createRoom", data)
+        await this.getSocket().emit("createRoom", data)
         this.$refs.createGameInput.value = ""
         this.makingName = false; 
         }
       },
-      handleJoinGame(e){
+      async handleJoinGame(e){
         e.preventDefault()
         this.roomId = this.$refs.joinGameInput.value
         const data = {
           roomId : this.$refs.joinGameInput.value
         }
-        this.getSocket().emit("joinRoom", data)
+        await this.getSocket().emit("joinRoom", data)
         this.$refs.joinGameInput.value = ""
         this.makingName = false;
       },
@@ -265,12 +278,31 @@
           roomId: this.roomId,
           game: this.getGame()
         }
-        this.getSocket().emit("addNameToGame", data)
+        await this.getSocket().emit("addNameToGame", data)
         this.$refs.addNameToGame.value = ""
         this.makingName = false;
+      },
+
+      //railroad methods
+      handleStartAuction(railroad){
+        if(this.getGame().players[this.getGame().turnIndex].name === this.getPlayer().name){
+          if(this.getGame().shownRailRoads[railroad].minimumPrice > this.getPlayer().money){
+            this.updateMessage("Not Enough Money")
+          }else{
+            const data = {
+              game: this.getGame(),
+              railroad:railroad
+            } 
+            this.getSocket().emit("startAuction", data)
+          }
+        }else{
+          this.updateMessage("Not Your Turn")
+        }
       }
     }
   }
+
+  //when a player tries to join a room, we also need to check if the game associated with that room is active.
 </script>
 
 <style scoped>

@@ -7,11 +7,13 @@ export default Vuex.createStore({
       name: '',
       player: {},
       socket: {},
-      gameCanStart: false
+      gameCanStart: false,
+      auction : {
+        
+      },
+      message:null,
+      gameRunning: false
     }
-  },
-  actions: {
-
   },
   mutations: {
     updateGame(state, payload){
@@ -28,6 +30,12 @@ export default Vuex.createStore({
     },
     updateGameCanStart(state, payload){
       state.gameCanStart = payload
+    },
+    updateMessage(state, payload) {
+      state.message = payload
+    },
+    updateGameRunning(state, payload){
+      state.gameRunning = payload
     }
   },
   getters: {
@@ -39,6 +47,12 @@ export default Vuex.createStore({
     },
     getSocket: (state) => () => {
       return state.socket
+    },
+    getMessage:(state) => () => {
+      return state.message
+    },
+    getGameRunning: (state) => () => {
+      return state.gameRunning
     }
   }
 })
