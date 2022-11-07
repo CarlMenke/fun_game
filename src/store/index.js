@@ -8,9 +8,6 @@ export default Vuex.createStore({
       player: {},
       socket: {},
       gameCanStart: false,
-      auction : {
-        
-      },
       message:null,
       gameRunning: false
     }

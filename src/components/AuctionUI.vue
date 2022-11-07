@@ -4,12 +4,13 @@
             <input v-model="bidValueInput" placeholder="Bid Value..."/>
             <button type="submit">Bid</button>
             <button @click="handleDropOutAuction">Out</button>
+            <div>Current Bid: {{game.bid}}</div>
         </form>
     </div>
 </template>
 
 <script>
-    import { mapState, mapGetters } from 'vuex'
+    import { mapState, mapGetters, mapMutations } from 'vuex'
     import { ref } from 'vue'
     const bidValueInput = ref('')
     export default {
@@ -23,22 +24,30 @@
             }
         },
         computed:{
-            ...mapState(["game", "player", "socket"]),
+            ...mapState(["game", "player", "socket", "message"]),
             ...mapGetters(["getGame", "getSocket"])
         },
         methods:{
+            ...mapMutations(["updateMessage"]),
             handleAuctionRound(e){
                 e.preventDefault()
                 let game = this.getGame()
                 if(parseInt(this.bidValueInput) <= game.players[game.turnIndex].money){
-                    const data ={
-                        game : game,
-                        newBid : parseInt(this.bidValueInput)
-                    }
-                    this.getSocket().emit("auctionRound", data)
+                    game.payload = parseInt(this.bidValueInput)
+                    game.action = "AUCTION_ROUND"
+                    this.getSocket().emit("ACTION", game)
+                    this.bidValueInput = ""
                 }else{
-                    this.updateMessage("Invalidn Bid")
+                    this.updateMessage("Invalid Bid")
                 }
+            },
+            handleDropOutAuction(e){
+                e.preventDefault()
+                let game = this.getGame()
+                game.action = "AUCTION_OUT"
+                game.payload = ""
+
+                this.getSocket().emit("ACTION", game)
             }
         }
     }

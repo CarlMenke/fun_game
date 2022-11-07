@@ -3,6 +3,7 @@
         <PlayerStats></PlayerStats>
         <PPCard/>
         <AuctionUI v-if="game.auction"/>
+        <div v-for="(message,messageIndex) in game.actionFeed" :key="messageIndex"> {{message}}</div> 
     </div>
 </template>
 

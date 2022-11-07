@@ -132,7 +132,24 @@
       await this.getSocket().on("emitMessage", message => {
         this.updateMessage(message)
       })
+
+      await this.getSocket().on("UPDATE_GAME", game => {
+
+        console.log("GAME:", game)
+        console.log("PLAYER:", game.players.filter(player => player.name === this.getPlayer().name)[0])
+        
+        let thisPlayer = game.players.filter(player => player.name === this.getPlayer().name)[0]
+        
+        this.updateGame(game)
+        this.updatePlayer(thisPlayer)
+        this.updateMessage(game.message)
+
+        switch(game.action){
+          default:
+        }
+      })
     },
+
     methods : {
 
       //state methods
@@ -289,11 +306,11 @@
           if(this.getGame().shownRailRoads[railroad].minimumPrice > this.getPlayer().money){
             this.updateMessage("Not Enough Money")
           }else{
-            const data = {
-              game: this.getGame(),
-              railroad:railroad
-            } 
-            this.getSocket().emit("startAuction", data)
+            console.log("here")
+            let game =  this.getGame()
+            game.payload = railroad
+            game.action = "START_AUCTION"
+            this.getSocket().emit("ACTION", game)
           }
         }else{
           this.updateMessage("Not Your Turn")
