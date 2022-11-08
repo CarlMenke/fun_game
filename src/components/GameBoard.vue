@@ -319,15 +319,24 @@
 
       //railroad methods
       handleStartAuction(railroad){
-        if(this.getGame().players[this.getGame().turnIndex].name === this.getPlayer().name){
-          if(this.getGame().shownRailRoads[railroad].minimumPrice > this.getPlayer().money){
+        let player = this.getPlayer()
+        let game = this.getGame()
+        if(
+            game.players[game.turnIndex].name === player.name 
+            && !player.discarding 
+            && !player.isInAuction 
+            && !player.pickingProduceItems 
+            && !player.selling
+        ){
+          if(game.shownRailRoads[railroad].minimumPrice > player.money){
             this.updateMessage("Not Enough Money")
           }else{
-            console.log("here")
-            let game =  this.getGame()
-            game.payload = railroad
-            game.action = "START_AUCTION"
-            this.getSocket().emit("ACTION", game)
+            if(!player.inAuction && !player.selling &&!player.pickingProduceItems){
+              console.log("here")
+              game.payload = railroad
+              game.action = "START_AUCTION"
+              this.getSocket().emit("ACTION", game)
+            }
           }
         }else{
           this.updateMessage("Not Your Turn")
@@ -336,11 +345,16 @@
 
       //selling methods
       handleSellStart(sellingCommodity){
-        console.log(this.getPlayer().commodies.filter(commodity => {return commodity.name === sellingCommodity}).length)
-        if(this.getGame().players[this.getGame().turnIndex].name === this.getPlayer().name){
-          if(this.getPlayer().commodies.filter(commodity => {return commodity.name === sellingCommodity}).length !== 0){
-            let player = this.getPlayer()
-            let game = this.getGame()
+        let player = this.getPlayer()
+        let game = this.getGame()
+        if(
+            game.players[game.turnIndex].name === player.name 
+            && !player.discarding 
+            && !player.isInAuction 
+            && !player.pickingProduceItems 
+            && !player.selling
+        ){
+          if(player.commodies.filter(commodity => {return commodity.name === sellingCommodity}).length !== 0){
             player.selling = true
             game.players[game.turnIndex] = player
             game.sellingCommodity = sellingCommodity
@@ -350,18 +364,29 @@
             this.updateMessage(`You dont have any ${sellingCommodity}`)
           }
         }else{
-          this.updateMessage("Not Your Turn")
+          this.updateMessage("Cannot Do That Now")
         }
       },
       handleSell(e){
         e.preventDefault()
-        if(this.getGame().players[this.getGame().turnIndex].name === this.getPlayer().name){
-          let game = this.getGame()
-          game.sellAmount = parseInt(this.$refs.sellAmountInput.value)
-          game.action = "SELL"
-          this.getSocket().emit("ACTION", game)
+        let player = this.getPlayer()
+        let game = this.getGame()
+        if(
+            game.players[game.turnIndex].name === player.name 
+            && !player.discarding 
+            && !player.isInAuction 
+            && !player.pickingProduceItems 
+            && player.selling
+        ){
+          if(parseInt(this.$refs.sellAmountInput.value) <= player.money){
+            game.sellAmount = parseInt(this.$refs.sellAmountInput.value) 
+            game.action = "SELL"
+            this.getSocket().emit("ACTION", game)
+          }else{
+            this.updateMessage("You Dont Have That Much.")
+          }
         }else{
-          this.updateMessage("Not Your Turn")
+          this.updateMessage("Cannot Do That Now.")
         }
       },
 

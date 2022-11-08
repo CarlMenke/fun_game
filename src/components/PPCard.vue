@@ -1,10 +1,10 @@
 <template>
-    <div>
-        <div v-for="(card,cardIndex) in player?.productionCards" :key="cardIndex" class="ppcard" @click="handleProduce(cardIndex)">
-            <div class="producIion-container">
+    <div class="row" >
+        <div v-for="(card,cardIndex) in player.productionCards" :key="cardIndex" class="ppcard" @click="handleProduce(cardIndex)">
+            <div class="production-container">
                 <img 
                     class="commodity-small" 
-                    v-for="(commodity, commodityIndex) in card?.production" 
+                    v-for="(commodity, commodityIndex) in card.production" 
                     :key="commodityIndex" 
                     :src="require(`../../public/assets/commodies/${commodity.imageLink}`)" 
                 />
@@ -12,14 +12,14 @@
             <div class="price-container">
                 <img 
                     class="commodity-small" 
-                    v-for="(commodity, commodityIndex) in card?.price" 
+                    v-for="(commodity, commodityIndex) in card.price" 
                     :key="commodityIndex" 
                     :src="require(`../../public/assets/commodies/${commodity.imageLink}`)"
                 />
             </div>
         </div>
         <div v-if="player.pickingProduceItems">
-            <div class="producIion-container">
+            <div class="production-container">
                 Choose {{player.productionMax}} commodies to produce.
                 <img 
                     class="commodity-small" 
@@ -31,7 +31,7 @@
             </div>
         </div>
         <div v-if="player.discarding">
-            <div class="producIion-container">
+            <div class="production-container">
                 Choose {{player.commodies.length - player.commodityMax}} commodies to discard:
                 <img 
                     class="commodity-small" 
@@ -54,18 +54,26 @@ export default {
         ...mapGetters(["getPlayer", "getSocket", "getGame"])
     },
     mounted () {
-        console.log(this.player)
+
     },
     methods: {
         ...mapMutations(["updatePlayer", "updateSocket", "updateGame", "updateMessage"]),
         handleProduce(index){
-            if(this.getGame().players[this.getGame().turnIndex].name === this.getPlayer().name){
-                let player = this.getPlayer()
+            let player = this.getPlayer()
+            let game = this.getGame()
+            console.log(player.producingArray.length)
+            if(
+                game.players[game.turnIndex].name === player.name 
+                && !player.discarding 
+                && !player.isInAuction 
+                && player.producingArray.length === 0
+                && !player.selling
+            ){
                 player.pickingProduceItems = true
                 player.producingIndex = index
                 this.updatePlayer(player)
             }else{
-            this.updateMessage("Not Your Turn")
+                this.updateMessage("Cannot do that now.")
             }
         },
         handleUpdateProducingArray(index){
@@ -113,8 +121,8 @@ export default {
 
 <style>
     .ppcard{
-        width:12vw;
-        height:25vh;
+        width:5vw;
+        height:10vh;
         border:1px solid black; 
         margin:5px;
     }
@@ -123,7 +131,8 @@ export default {
         flex-flow:row wrap;
         justify-content: space-around;
         align-items: space-around;
-        height:50%
+        height:50%;
+        border:1px solid black
     }
     .price-container{
         display:flex;
@@ -135,5 +144,9 @@ export default {
     .commodity-small{
         width:20px;
         height:20px;
+    }
+    .row {
+        display: flex;
+        flex-flow:row nowrap
     }
 </style>
