@@ -45,8 +45,7 @@
                 e.preventDefault()
                 let game = this.getGame()
                 game.action = "AUCTION_OUT"
-                game.payload = ""
-
+                game.messageFeed.push(`${game.players[game.auctionIndex].name} dropped out of the bid.`)
                 this.getSocket().emit("ACTION", game)
             }
         }

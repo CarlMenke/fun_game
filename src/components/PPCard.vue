@@ -1,25 +1,112 @@
 <template>
     <div>
-        <div v-for="(card,cardIndex) in player?.productionCards" :key="cardIndex" class="ppcard">
+        <div v-for="(card,cardIndex) in player?.productionCards" :key="cardIndex" class="ppcard" @click="handleProduce(cardIndex)">
             <div class="producIion-container">
-                <img class="commodity-small" v-for="(commodity, commodityIndex) in card?.production" :src="commodity?.imageLink" :key="commodityIndex"/>
+                <img 
+                    class="commodity-small" 
+                    v-for="(commodity, commodityIndex) in card?.production" 
+                    :key="commodityIndex" 
+                    :src="require(`../../public/assets/commodies/${commodity.imageLink}`)" 
+                />
             </div>
             <div class="price-container">
-                <img class="commodity-small" v-for="(commodity, commodityIndex) in card?.price" :src="commodity?.imageLink" :key="commodityIndex" />
+                <img 
+                    class="commodity-small" 
+                    v-for="(commodity, commodityIndex) in card?.price" 
+                    :key="commodityIndex" 
+                    :src="require(`../../public/assets/commodies/${commodity.imageLink}`)"
+                />
+            </div>
+        </div>
+        <div v-if="player.pickingProduceItems">
+            <div class="producIion-container">
+                Choose {{player.productionMax}} commodies to produce.
+                <img 
+                    class="commodity-small" 
+                    v-for="(commodity, commodityIndex) in player.productionCards[player.producingIndex].production" 
+                    @click="handleUpdateProducingArray(commodityIndex)" 
+                    :src="require(`../../public/assets/commodies/${commodity.imageLink}`)" 
+                    :key="commodityIndex"
+                />
+            </div>
+        </div>
+        <div v-if="player.discarding">
+            <div class="producIion-container">
+                Choose {{player.commodies.length - player.commodityMax}} commodies to discard:
+                <img 
+                    class="commodity-small" 
+                    v-for="(commodity, commodityIndex) in player.commodies" 
+                    @click="handleDiscard(commodityIndex)" 
+                    :src="require(`../../public/assets/commodies/${commodity.imageLink}`)" 
+                    :key="commodityIndex"
+                />
             </div>
         </div>
     </div>
 </template>
 
 <script>
-import { mapState } from "vuex"
+import { mapGetters, mapMutations, mapState } from "vuex"
 export default {
     name: "PPCard",
     computed:{
-        ...mapState(["player"])
+        ...mapState(["player", "socket", "game"]),
+        ...mapGetters(["getPlayer", "getSocket", "getGame"])
     },
     mounted () {
         console.log(this.player)
+    },
+    methods: {
+        ...mapMutations(["updatePlayer", "updateSocket", "updateGame", "updateMessage"]),
+        handleProduce(index){
+            if(this.getGame().players[this.getGame().turnIndex].name === this.getPlayer().name){
+                let player = this.getPlayer()
+                player.pickingProduceItems = true
+                player.producingIndex = index
+                this.updatePlayer(player)
+            }else{
+            this.updateMessage("Not Your Turn")
+            }
+        },
+        handleUpdateProducingArray(index){
+            if(this.getGame().players[this.getGame().turnIndex].name === this.getPlayer().name){
+                let player = {...this.getPlayer()}
+                player.producingArray.push(...player.productionCards[player.producingIndex].production.splice(index,1))
+                console.log("PLAYER:", player)
+                if(player.producingArray.length === player.productionMax){
+                    player.pickingProduceItems = false
+                    let game = this.getGame()
+                    game.players[game.turnIndex] = player
+                    this.updatePlayer(player)
+                    game.action = "PRODUCE"
+                    game.payload = player.producingIndex
+                    this.getSocket().emit("ACTION", game)
+                }
+            }else{
+                this.updateMessage("Not Your Turn")
+            }
+        },
+        handleDiscard(index){
+            let player = this.getPlayer()
+            player.commodies.splice(index,1)
+            this.updatePlayer(player)
+
+            let game = this.getGame()
+            game.players[game.turnIndex] = player
+            this.updateGame(game)
+
+            if(player.commodies.length === player.commodityMax){
+                player.discarding = false
+                this.updatePlayer(player)
+
+                let game = this.getGame()
+                game.players[game.turnIndex] = player
+                this.updateGame(game)
+
+                game.action = "NEXT_TURN"
+                this.getSocket().emit("ACTION", game)
+            }
+        }
     }
 }
 </script>

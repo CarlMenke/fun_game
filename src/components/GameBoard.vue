@@ -1,6 +1,6 @@
 <template>
   <div>
-    <UserMessage v-if="message"/>
+    <UserMessage/>
       <UI v-if="gameRunning"></UI>
     <form v-if="!gameId" @submit="handleCreateGame">
       <input ref="createGameInput"/>
@@ -19,8 +19,19 @@
     <canvas id="canvas">
     </canvas>
     <section v-if="gameRunning">
+      <div v-if="player.selling">
+            <form @submit="handleSell">
+              <input ref="sellAmountInput"/>
+              <button type="submit">sell</button>
+            </form>
+        </div>
       <div class="flexrow">
-        <div class="flex-item" v-for="commodity in game.commodies" :key="commodity.name"> {{commodity.name}} price: {{commodity.value}}</div> 
+        <div @click="handleSellStart('wheat')" class="flex-item" > wheat price: {{game.commodityValues.wheat}}</div> 
+        <div @click="handleSellStart('wood')" class="flex-item" > wood price: {{game.commodityValues.wood}}</div> 
+        <div @click="handleSellStart('iron')" class="flex-item" > iron price: {{game.commodityValues.iron}}</div> 
+        <div @click="handleSellStart('coal')" class="flex-item" > coal price: {{game.commodityValues.coal}}</div> 
+        <div @click="handleSellStart('goods')" class="flex-item" > goods price: {{game.commodityValues.goods}}</div> 
+        <div @click="handleSellStart('luxury')" class="flex-item" > luxury price: {{game.commodityValues.luxury}}</div> 
       </div>
       <div class="flexrow">
         <div class="flex-item" v-for="(railroad, railRoadIndex) in game.shownRailRoads" :key="railRoadIndex" @click="handleStartAuction(railRoadIndex)" > railroad {{railRoadIndex}}: {{railroad.name}}</div> 
@@ -144,7 +155,13 @@
         this.updatePlayer(thisPlayer)
         this.updateMessage(game.message)
 
+        let player = this.getPlayer()
         switch(game.action){
+          case "DISCARD":
+            this.updateMessage(`You must discard ${player.commodies.length - player.commodityMax} commodies.`)
+            player.discarding = true
+            this.updatePlayer(player)
+            break
           default:
         }
       })
@@ -268,13 +285,13 @@
       async handleCreateGame(e){
         e.preventDefault()
         if(this.$refs.createGameInput.value !== ""){
-        this.roomId = this.$refs.createGameInput.value
-        const data = {
-          roomId : this.$refs.createGameInput.value
-        }
-        await this.getSocket().emit("createRoom", data)
-        this.$refs.createGameInput.value = ""
-        this.makingName = false; 
+          this.roomId = this.$refs.createGameInput.value
+          const data = {
+            roomId : this.$refs.createGameInput.value
+          }
+          await this.getSocket().emit("createRoom", data)
+          this.$refs.createGameInput.value = ""
+          this.makingName = false; 
         }
       },
       async handleJoinGame(e){
@@ -315,7 +332,39 @@
         }else{
           this.updateMessage("Not Your Turn")
         }
-      }
+      },
+
+      //selling methods
+      handleSellStart(sellingCommodity){
+        console.log(this.getPlayer().commodies.filter(commodity => {return commodity.name === sellingCommodity}).length)
+        if(this.getGame().players[this.getGame().turnIndex].name === this.getPlayer().name){
+          if(this.getPlayer().commodies.filter(commodity => {return commodity.name === sellingCommodity}).length !== 0){
+            let player = this.getPlayer()
+            let game = this.getGame()
+            player.selling = true
+            game.players[game.turnIndex] = player
+            game.sellingCommodity = sellingCommodity
+            this.updatePlayer(player)
+            this.updateGame(game)
+          }else{
+            this.updateMessage(`You dont have any ${sellingCommodity}`)
+          }
+        }else{
+          this.updateMessage("Not Your Turn")
+        }
+      },
+      handleSell(e){
+        e.preventDefault()
+        if(this.getGame().players[this.getGame().turnIndex].name === this.getPlayer().name){
+          let game = this.getGame()
+          game.sellAmount = parseInt(this.$refs.sellAmountInput.value)
+          game.action = "SELL"
+          this.getSocket().emit("ACTION", game)
+        }else{
+          this.updateMessage("Not Your Turn")
+        }
+      },
+
     }
   }
 

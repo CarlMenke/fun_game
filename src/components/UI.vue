@@ -3,7 +3,6 @@
         <PlayerStats></PlayerStats>
         <PPCard/>
         <AuctionUI v-if="game.auction"/>
-        <div v-for="(message,messageIndex) in game.actionFeed" :key="messageIndex"> {{message}}</div> 
     </div>
 </template>
 
@@ -26,9 +25,16 @@
 </script>
 
 <style >
+    .messagefeed-container{
+        display:flex;
+        flex-flow:column nowrap; 
+    }
     .ui-test{
         display:flex;
         flex-flow:row  nowrap;
         justify-content: space-between;
+    }
+    .message{
+        margin:5px
     }
 </style>

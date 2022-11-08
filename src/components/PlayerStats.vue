@@ -7,9 +7,7 @@
         <div class="commodies-railroads">
             <div class="commodies margin">
                 Commodies:
-                <div v-for="type in player.commodies" :key="type">
-                    <img class="image" v-for="commodity in type" :src="require(`../../public/assets/commodies/${commodity.imageLink}`)" :key="commodity.name"/>
-                </div>
+                <img class="image" v-for="(commodity,commodityIndex) in player.commodies" :key="commodityIndex" :src="require(`../../public/assets/commodies/${commodity.imageLink}`)"/>
             </div>
             <div class="railroads margin">
                 RailRoads:
