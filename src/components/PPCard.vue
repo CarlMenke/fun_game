@@ -42,6 +42,18 @@
                 />
             </div>
         </div>
+        <div v-if="player.pickingTownCommodies">
+            <div class="production-container">
+                Choose {{game.avaiableTown.anyPrice}} commodies to use:
+                <img 
+                    class="commodity-small" 
+                    v-for="(commodity, commodityIndex) in player.commodies" 
+                    @click="handleUseForTown(commodityIndex)" 
+                    :src="require(`../../public/assets/commodies/${commodity.imageLink}`)" 
+                    :key="commodityIndex"
+                />
+            </div>
+        </div>
     </div>
 </template>
 
@@ -68,6 +80,8 @@ export default {
                 && !player.isInAuction 
                 && player.producingArray.length === 0
                 && !player.selling
+                && !player.buyingTown
+                && !player.buyingBuilding
             ){
                 player.pickingProduceItems = true
                 player.producingIndex = index
@@ -80,7 +94,6 @@ export default {
             if(this.getGame().players[this.getGame().turnIndex].name === this.getPlayer().name){
                 let player = {...this.getPlayer()}
                 player.producingArray.push(...player.productionCards[player.producingIndex].production.splice(index,1))
-                console.log("PLAYER:", player)
                 if(player.producingArray.length === player.productionMax){
                     player.pickingProduceItems = false
                     let game = this.getGame()
@@ -112,6 +125,29 @@ export default {
                 this.updateGame(game)
 
                 game.action = "NEXT_TURN"
+                this.getSocket().emit("ACTION", game)
+            }
+        },
+        handleUseForTown(index){
+            let player = this.getPlayer()
+            let game = this.getGame()
+
+            game.townBuyingArray.push(...player.commodies.splice(index,1))
+            this.updatePlayer(player)
+
+            game.players[game.turnIndex] = player
+            this.updateGame(game)
+
+            if(game.townBuyingArray.length === game.avaiableTown.anyPrice){
+                player.buyingTown = false
+                player.pickingTownCommodies = false
+                this.updatePlayer(player)
+
+                let game = this.getGame()
+                game.players[game.turnIndex] = player
+                this.updateGame(game)
+
+                game.action = "BUY_TOWN_ANY"
                 this.getSocket().emit("ACTION", game)
             }
         }

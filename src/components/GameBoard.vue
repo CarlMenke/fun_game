@@ -37,10 +37,10 @@
         <div class="flex-item" v-for="(railroad, railRoadIndex) in game.shownRailRoads" :key="railRoadIndex" @click="handleStartAuction(railRoadIndex)" > railroad {{railRoadIndex}}: {{railroad.name}}</div> 
       </div>
       <div class="flexrow">
-        <div class="flex-item"> town avaiable: {{game.avaiableTown.specificType}}{{game.avaiableTown.specificPrice}} </div>
+        <div class="flex-item" @click="handleBuyTown"> town avaiable: {{game.avaiableTown.specificType}}{{game.avaiableTown.specificPrice}} </div>
       </div>
       <div class="flexrow">
-        <div class="flex-item" v-for="(building, buildingIndex) in game.shownBuildings" :key="buildingIndex"> building {{buidlingIndex}}: {{building.name}}</div> 
+        <div class="flex-item" v-for="(building, buildingIndex) in game.shownBuildings" :key="buildingIndex"  @click="handleBuyBuilding(buildingIndex)"> building {{buildingIndex}}: {{building.name}}</div> 
       </div>
     </section>
     <button v-if="!gameRunning && game ? game.players.length > 1 : false && game.players[game.turnIndex].name === player.name" @click="handleStartGame()">START GAME</button>
@@ -158,9 +158,11 @@
         let player = this.getPlayer()
         switch(game.action){
           case "DISCARD":
-            this.updateMessage(`You must discard ${player.commodies.length - player.commodityMax} commodies.`)
-            player.discarding = true
-            this.updatePlayer(player)
+            if(game.players[game.turnIndex].name === player.name){
+              this.updateMessage(`You must discard ${player.commodies.length - player.commodityMax} commodies.`)
+              player.discarding = true
+              this.updatePlayer(player)
+            }
             break
           default:
         }
@@ -168,7 +170,6 @@
     },
 
     methods : {
-
       //state methods
       ...mapMutations(["updateGameRunning", "updateGame", "updateName", "updatePlayer", "updateSocket", "updateGameCanStart", "updateMessage"]),
 
@@ -327,6 +328,8 @@
             && !player.isInAuction 
             && !player.pickingProduceItems 
             && !player.selling
+            && !player.buyingTown
+            && !player.buyingBuilding
         ){
           if(game.shownRailRoads[railroad].minimumPrice > player.money){
             this.updateMessage("Not Enough Money")
@@ -353,6 +356,8 @@
             && !player.isInAuction 
             && !player.pickingProduceItems 
             && !player.selling
+            && !player.buyingTown
+            && !player.buyingBuilding
         ){
           if(player.commodies.filter(commodity => {return commodity.name === sellingCommodity}).length !== 0){
             player.selling = true
@@ -377,6 +382,8 @@
             && !player.isInAuction 
             && !player.pickingProduceItems 
             && player.selling
+            && !player.buyingTown
+            && !player.buyingBuilding
         ){
           if(parseInt(this.$refs.sellAmountInput.value) <= player.money){
             game.sellAmount = parseInt(this.$refs.sellAmountInput.value) 
@@ -390,6 +397,66 @@
         }
       },
 
+      //town methods
+      handleBuyTown(){
+        let player = this.getPlayer()
+        let game = this.getGame()
+        if(
+            game.players[game.turnIndex].name === player.name 
+            && !player.discarding 
+            && !player.isInAuction 
+            && !player.pickingProduceItems 
+            && !player.selling
+            && !player.pickingTownCommodies
+            && !player.buyingBuilding
+        ){
+          console.log("412")
+          if(player.commodies.filter(commodity=>{return commodity.name === game.avaiableTown.specificType}).length >= game.avaiableTown.specificPrice){
+            console.log("414")
+            game.action = "BUY_TOWN_SPECIFIC"
+            this.getSocket().emit("ACTION", game)
+          }else{
+            console.log("418")
+            this.updateMessage(`Not Enough ${game.avaiableTown.specificType}. You may purchase with any ${game.avaiableTown.anyPrice} commodies`)
+            if(player.commodies.length >= game.avaiableTown.anyPrice){
+              console.log("420")
+              player.pickingTownCommodies = true
+              this.updatePlayer(player)
+            }else{
+              this.updateMessage(`Not Enough Commodies`)
+            }
+          }
+        }else{
+          this.updateMessage("Cannot Do That Now.")
+        }
+      },
+
+      //building methods
+      handleBuyBuilding(index){
+        let player = this.getPlayer()
+        let game = this.getGame()
+        if(
+            game.players[game.turnIndex].name === player.name 
+            && !player.discarding 
+            && !player.isInAuction 
+            && !player.pickingProduceItems 
+            && !player.selling
+            && !player.pickingTownCommodies
+            && !player.buyingBuilding
+        ){
+          if(game.shownBuildings[index].price <= player.money){
+            player.buyingBuilding = true
+            game.players[game.turnIndex] = player
+            game.buildingBuyIndex = index
+            game.action = "BUY_BUILDING"
+            this.getSocket().emit("ACTION", game)
+          }else{
+            this.updateMessage("Not Enough Money")
+          }
+        }else{
+          this.updateMessage("Cannot Do That Now")
+        }
+      }
     }
   }
 
